@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Trắc Nghiệm Thông Minh</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+    </div>
+
+    <main class="container">
+        <header class="header">
+            <h1>Quiz<span>Pro</span></h1>
+            <p>Tải lên file câu hỏi của bạn và làm bài ngay lập tức</p>
+        </header>
+
+        <section id="upload-section" class="card glassmorphism active">
+            <div class="upload-area" id="drop-zone">
+                <div class="upload-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                </div>
+                <h2>Kéo thả file hoặc click để tải lên</h2>
+                <p>Hỗ trợ định dạng .txt và .docx</p>
+                <input type="file" id="file-input" accept=".txt,.docx">
+                <button class="btn-primary" onclick="document.getElementById('file-input').click()">Chọn File</button>
+            </div>
+            
+            <div class="format-guide">
+                <h3>Định dạng file yêu cầu:</h3>
+                <pre>
+1. Câu hỏi của bạn?
+A. Lựa chọn 1
+B. Lựa chọn 2
+C. Lựa chọn 3
+D. Lựa chọn 4
+Đáp án: A
+                </pre>
+            </div>
+        </section>
+
+        <section id="quiz-section" class="quiz-container hidden">
+            <div class="quiz-header">
+                <h2>Bài Trắc Nghiệm</h2>
+                <div class="quiz-stats">
+                    <span id="score-display">Điểm: 0/0</span>
+                    <button id="share-btn" class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Chia sẻ</button>
+                    <button id="reset-btn" class="btn-secondary">Tải file khác</button>
+                </div>
+            </div>
+            <div id="questions-container"></div>
+        </section>
+    </main>
+
+    <!-- Result Modal -->
+    <div id="result-modal" class="modal hidden">
+        <div class="modal-content glassmorphism">
+            <h2 style="color: var(--success-color); margin-bottom: 0.5rem;">Hoàn Thành! 🎉</h2>
+            <p style="font-size: 1.2rem; margin-top: 1rem;">Điểm số: <strong id="final-score" style="font-size: 1.8rem; color: #fff;">0/10</strong></p>
+            <p style="font-size: 1.1rem; margin-bottom: 1.5rem; color: var(--text-secondary);">Xếp loại: <strong id="final-rank" style="color: #fff; font-size: 1.2rem;">Chưa rõ</strong></p>
+            <button id="retry-btn" class="btn-primary" style="width: 100%; margin-bottom: 0.8rem;">Làm Lại Bài</button>
+            <button id="close-result-btn" class="btn-secondary" style="width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.2);">Xem Lại Các Câu Đã Chọn</button>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div id="share-modal" class="modal hidden">
+        <div class="modal-content glassmorphism">
+            <h3>Chia sẻ bài kiểm tra</h3>
+            <div style="margin: 1.5rem 0; text-align: left;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" id="one-time-checkbox" style="width: 1.2rem; height: 1.2rem;">
+                    Chỉ cho phép làm 1 lần (Lưu kết quả trên máy)
+                </label>
+            </div>
+            <button id="generate-link-btn" class="btn-primary" style="width: 100%">Tạo Link Chia Sẻ</button>
+            <div id="share-link-container" class="hidden" style="margin-top: 1rem;">
+                <input type="text" id="share-link-input" readonly style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: white; margin-bottom: 0.5rem;">
+                <button id="copy-link-btn" class="btn-secondary" style="width: 100%">Copy Link</button>
+            </div>
+            <button id="close-modal-btn" class="btn-secondary" style="margin-top: 1rem; width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.2);">Đóng</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
