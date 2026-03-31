@@ -333,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 optEl.innerHTML = `<strong>${opt.char}.</strong> &nbsp;${opt.text}`;
                 
                 optEl.addEventListener('click', () => {
-                    handleAnswerSelection(qCard, optionsGrid, optEl, opt.char, q.correctAnswer, feedback);
+                    handleAnswerSelection(qCard, optionsGrid, optEl, opt.char, q.correctAnswer, feedback, index);
                 });
                 
                 optionsGrid.appendChild(optEl);
@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function handleAnswerSelection(card, grid, selectedEl, selectedChar, correctChar, feedbackEl) {
+    function handleAnswerSelection(card, grid, selectedEl, selectedChar, correctChar, feedbackEl, itemIndex) {
         // Prevent double selecting
         if (card.classList.contains('answered')) return;
         card.classList.add('answered');
@@ -389,6 +389,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         updateScore();
+        
+        if (itemIndex !== undefined) {
+            const cards = document.querySelectorAll('.question-card');
+            if (itemIndex + 1 < cards.length && answeredQuestions < questions.length) {
+                setTimeout(() => {
+                    cards[itemIndex + 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 600);
+            }
+        }
         
         if (answeredQuestions === questions.length) {
             setTimeout(() => {
