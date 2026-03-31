@@ -21,14 +21,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultModal = document.getElementById('result-modal');
     const finalScore = document.getElementById('final-score');
     const finalRank = document.getElementById('final-rank');
+    const finalTime = document.getElementById('final-time');
     const retryBtn = document.getElementById('retry-btn');
     const closeResultBtn = document.getElementById('close-result-btn');
+
+    // Timer elements
+    const floatingTimer = document.getElementById('floating-timer');
+    const timeText = document.getElementById('time-text');
 
     let questions = [];
     let score = 0;
     let answeredQuestions = 0;
     let isOneTimeMode = false;
     let currentQuizId = null;
+    let timerInterval = null;
+    let secondsElapsed = 0;
+
+    function startTimer() {
+        if (timerInterval) return;
+        if (floatingTimer) floatingTimer.classList.remove('hidden');
+        timerInterval = setInterval(() => {
+            secondsElapsed++;
+            const m = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+            const s = (secondsElapsed % 60).toString().padStart(2, '0');
+            if (timeText) timeText.textContent = `${m}:${s}`;
+        }, 1000);
+    }
+
+    function resetTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = null;
+        secondsElapsed = 0;
+        if (timeText) timeText.textContent = '00:00';
+        if (floatingTimer) floatingTimer.classList.add('hidden');
+    }
 
     // Check URL hash on load
     if (window.location.hash && window.location.hash.length > 5) {
@@ -100,12 +126,14 @@ document.addEventListener('DOMContentLoaded', () => {
         isOneTimeMode = false;
         currentQuizId = null;
         window.location.hash = '';
+        resetTimer();
         updateScore();
     });
 
     if (retryBtn) {
         retryBtn.addEventListener('click', () => {
             resultModal.classList.add('hidden');
+            resetTimer();
             startQuiz(questions);
         });
     }
@@ -354,6 +382,10 @@ document.addEventListener('DOMContentLoaded', () => {
         options.forEach(opt => opt.classList.add('disabled'));
 
         answeredQuestions++;
+        
+        if (answeredQuestions === 1) {
+            startTimer();
+        }
 
         // Some questions might not have answers specified explicitly
         if (!correctChar) {
@@ -400,6 +432,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         if (answeredQuestions === questions.length) {
+            if (timerInterval) clearInterval(timerInterval);
+            
             setTimeout(() => {
                 if (isOneTimeMode) {
                     localStorage.setItem('quiz_completed_' + currentQuizId, 'true');
@@ -429,6 +463,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (finalRank) {
                         finalRank.innerHTML = `${rankText} <span style="font-size: 0.9rem; color: var(--text-secondary); font-weight: normal;">(Đúng ${score}/${questions.length} câu)</span>`;
                         finalRank.style.color = rankColor;
+                    }
+                    if (finalTime) {
+                        finalTime.textContent = timeText ? timeText.textContent : '00:00';
                     }
 
                     resultModal.classList.remove('hidden');

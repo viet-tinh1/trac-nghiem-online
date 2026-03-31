@@ -60,12 +60,18 @@ D. Lựa chọn 4
         </section>
     </main>
 
+    <!-- Floating Timer -->
+    <div id="floating-timer" class="hidden glassmorphism" style="position: fixed; bottom: 30px; right: 30px; padding: 12px 24px; border-radius: 50px; z-index: 1000; font-weight: bold; font-size: 1.4rem; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 2px solid var(--primary-color);">
+        ⏱ <span id="time-text">00:00</span>
+    </div>
+
     <!-- Result Modal -->
     <div id="result-modal" class="modal hidden">
         <div class="modal-content glassmorphism">
             <h2 style="color: var(--success-color); margin-bottom: 0.5rem;">Hoàn Thành! 🎉</h2>
             <p style="font-size: 1.2rem; margin-top: 1rem;">Điểm số: <strong id="final-score" style="font-size: 1.8rem; color: #fff;">0/10</strong></p>
-            <p style="font-size: 1.1rem; margin-bottom: 1.5rem; color: var(--text-secondary);">Xếp loại: <strong id="final-rank" style="color: #fff; font-size: 1.2rem;">Chưa rõ</strong></p>
+            <p style="font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--text-secondary);">Xếp loại: <strong id="final-rank" style="color: #fff; font-size: 1.2rem;">Chưa rõ</strong></p>
+            <p style="font-size: 1.1rem; margin-bottom: 1.5rem; color: var(--text-secondary);">Thời gian làm bài: <strong id="final-time" style="color: #fff; font-size: 1.2rem;">00:00</strong></p>
             <button id="retry-btn" class="btn-primary" style="width: 100%; margin-bottom: 0.8rem;">Làm Lại Bài</button>
             <button id="close-result-btn" class="btn-secondary" style="width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.2);">Xem Lại Các Câu Đã Chọn</button>
         </div>
