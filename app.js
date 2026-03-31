@@ -57,30 +57,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Check URL hash on load
-    if (window.location.hash && window.location.hash.length > 5) {
-        try {
-            const hash = window.location.hash.substring(1);
-            const decodedStr = LZString.decompressFromEncodedURIComponent(hash);
-            const data = JSON.parse(decodedStr);
-            
-            if (data && data.questions) {
-                if (data.oneTime && data.id) {
-                    isOneTimeMode = true;
-                    currentQuizId = data.id;
-                    if (localStorage.getItem('quiz_completed_' + currentQuizId)) {
-                        alert('Bài kiểm tra này chỉ cho phép làm 1 lần và bạn đã làm rồi!');
-                        return; // Block Quiz
+    function checkHash() {
+        if (window.location.hash && window.location.hash.length > 5) {
+            try {
+                const hash = window.location.hash.substring(1);
+                // Use decodeURIComponent if the browser has already messed with it
+                const decodedEncoded = decodeURIComponent(hash);
+                
+                // Try decompressing both ways just in case
+                let decodedStr = typeof LZString !== 'undefined' ? LZString.decompressFromEncodedURIComponent(hash) : null;
+                if (!decodedStr) {
+                    decodedStr = typeof LZString !== 'undefined' ? LZString.decompressFromEncodedURIComponent(decodedEncoded) : null;
+                }
+
+                if (decodedStr) {
+                    const data = JSON.parse(decodedStr);
+                    if (data && data.questions) {
+                        if (data.oneTime && data.id) {
+                            isOneTimeMode = true;
+                            currentQuizId = data.id;
+                            if (localStorage.getItem('quiz_completed_' + currentQuizId)) {
+                                alert('Bài kiểm tra này chỉ cho phép làm 1 lần và bạn đã làm rồi!');
+                                return;
+                            }
+                        }
+                        setTimeout(() => {
+                            startQuiz(data.questions);
+                        }, 200);
                     }
                 }
-                setTimeout(() => {
-                    startQuiz(data.questions);
-                }, 100);
+            } catch (e) {
+                console.error('Lỗi giải mã quiz từ URL:', e);
             }
-        } catch (e) {
-            console.error('Lỗi giải mã quiz từ URL:', e);
-            alert('Đường dẫn chia sẻ không hợp lệ hoặc bị lỗi!');
-            window.location.hash = '';
         }
+    }
+
+    if (typeof LZString !== 'undefined') {
+        checkHash();
+    } else {
+        // Fallback if script loads a bit late
+        setTimeout(checkHash, 500);
     }
 
     // Drag and drop event listeners
@@ -168,7 +184,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const jsonStr = JSON.stringify(data);
             const compressed = LZString.compressToEncodedURIComponent(jsonStr);
             
-            const url = window.location.origin + window.location.pathname + '#' + compressed;
+            // Safer URL generation: removes previous hash if any
+            const baseUrl = window.location.href.split('#')[0];
+            const url = baseUrl + '#' + compressed;
             shareLinkInput.value = url;
             shareLinkContainer.classList.remove('hidden');
         });
