@@ -130,7 +130,38 @@ D. Lựa chọn 4
         ⏱ <span id="time-text">00:00</span>
     </div>
 
-    <!-- Result Modal -->
+    <!-- Quiz Setup Modal -->
+    <div id="setup-modal" class="modal hidden">
+        <div class="modal-content glassmorphism" style="max-width: 450px;">
+            <h2 id="setup-title" style="margin-bottom: 0.5rem; color: var(--primary-color);">Sẵn sàng làm bài!</h2>
+            <p id="setup-total" style="color: var(--text-secondary); margin-bottom: 1.5rem;">Tổng số câu hỏi: 0</p>
+            
+            <div class="setup-modes" style="display: flex; flex-direction: column; gap: 1rem;">
+                <label id="mode-practice-label" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 2px solid var(--primary-color); border-radius: 12px; cursor: pointer; background: rgba(99, 102, 241, 0.1); transition: 0.3s;">
+                    <input type="radio" name="quiz-mode" value="practice" checked style="width: 1.2rem; height: 1.2rem;">
+                    <div style="text-align: left;">
+                        <h4 style="margin: 0; color: #fff;">Chế độ Ôn tập</h4>
+                        <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-secondary);">Làm toàn bộ số câu hiện có (100%)</p>
+                    </div>
+                </label>
+                <label id="mode-exam-label" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 2px solid transparent; border-radius: 12px; cursor: pointer; background: rgba(255, 255, 255, 0.05); transition: 0.3s;">
+                    <input type="radio" name="quiz-mode" value="exam" style="width: 1.2rem; height: 1.2rem;">
+                    <div style="text-align: left;">
+                        <h4 style="margin: 0; color: #fff;">Chế độ Thi thử</h4>
+                        <p style="margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-secondary);">Chọn ngẫu nhiên một số lượng câu hỏi</p>
+                    </div>
+                </label>
+            </div>
+
+            <div id="exam-config" class="hidden" style="margin-top: 1.2rem; text-align: left; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border);">
+                <label style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem; display: block;">Nhập số câu hỏi đề thi (1 - <span id="setup-limit-max">0</span>):</label>
+                <input type="number" id="setup-limit" min="1" value="50" style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white; font-size: 1rem; outline: none;">
+            </div>
+
+            <button id="start-btn" class="btn-primary" style="width: 100%; margin-top: 1.5rem; padding: 1rem; font-size: 1.1rem;">Bắt đầu làm bài</button>
+            <button id="cancel-setup-btn" class="btn-secondary" style="width: 100%; margin-top: 0.8rem; background: transparent; border: 1px solid rgba(255,255,255,0.1);">Hủy bỏ</button>
+        </div>
+    </div>
     <div id="result-modal" class="modal hidden">
         <div class="modal-content glassmorphism">
             <h2 style="color: var(--success-color); margin-bottom: 0.5rem;">Hoàn Thành! 🎉</h2>

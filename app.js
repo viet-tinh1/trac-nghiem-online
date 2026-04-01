@@ -28,6 +28,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const finalTime = document.getElementById('final-time');
     const retryBtn = document.getElementById('retry-btn');
     const closeResultBtn = document.getElementById('close-result-btn');
+    
+    // Setup Modal elements
+    const setupModal = document.getElementById('setup-modal');
+    const setupTotal = document.getElementById('setup-total');
+    const modePracticeLabel = document.getElementById('mode-practice-label');
+    const modeExamLabel = document.getElementById('mode-exam-label');
+    const examConfig = document.getElementById('exam-config');
+    const setupLimit = document.getElementById('setup-limit');
+    const setupLimitMax = document.getElementById('setup-limit-max');
+    const startBtn = document.getElementById('start-btn');
+    const cancelSetupBtn = document.getElementById('cancel-setup-btn');
+    const quizModeRadios = document.getElementsByName('quiz-mode');
 
     // Timer elements
     const floatingTimer = document.getElementById('floating-timer');
@@ -74,6 +86,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let viewMode = 'single';
     let autoNextDelay = 0;
     let autoNextTimeout = null;
+    let pendingQuestions = [];
+    let pendingFileName = "";
 
     function startTimer() {
         if (timerInterval) return;
@@ -138,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         }
                         setTimeout(() => {
-                            startQuiz(data.questions);
+                            showSetupModal(data.questions, currentFileName);
                         }, 200);
                     }
                 }
@@ -146,6 +160,72 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Lỗi giải mã quiz từ URL:', e);
             }
         }
+    }
+
+    function showSetupModal(qs, fileName) {
+        pendingQuestions = qs;
+        pendingFileName = fileName || "Bộ đề trắc nghiệm";
+        
+        if (setupTotal) setupTotal.textContent = `Tổng số câu hỏi: ${qs.length}`;
+        if (setupLimitMax) setupLimitMax.textContent = qs.length;
+        if (setupLimit) {
+            setupLimit.max = qs.length;
+            setupLimit.value = Math.min(50, qs.length);
+        }
+        
+        // Reset modal state
+        quizModeRadios.forEach(r => {
+            if (r.value === 'practice') r.checked = true;
+        });
+        updateSetupModeUI('practice');
+        
+        setupModal.classList.remove('hidden');
+    }
+
+    function updateSetupModeUI(mode) {
+        if (mode === 'practice') {
+            modePracticeLabel.style.borderColor = 'var(--primary-color)';
+            modePracticeLabel.style.background = 'rgba(99, 102, 241, 0.1)';
+            modeExamLabel.style.borderColor = 'transparent';
+            modeExamLabel.style.background = 'rgba(255, 255, 255, 0.05)';
+            examConfig.classList.add('hidden');
+        } else {
+            modeExamLabel.style.borderColor = 'var(--primary-color)';
+            modeExamLabel.style.background = 'rgba(99, 102, 241, 0.1)';
+            modePracticeLabel.style.borderColor = 'transparent';
+            modePracticeLabel.style.background = 'rgba(255, 255, 255, 0.05)';
+            examConfig.classList.remove('hidden');
+        }
+    }
+
+    quizModeRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            updateSetupModeUI(e.target.value);
+        });
+    });
+
+    if (startBtn) {
+        startBtn.addEventListener('click', () => {
+            const selectedMode = Array.from(quizModeRadios).find(r => r.checked)?.value;
+            let limit = null;
+            
+            if (selectedMode === 'exam') {
+                limit = parseInt(setupLimit.value) || 50;
+                if (limit < 1) limit = 1;
+                if (limit > pendingQuestions.length) limit = pendingQuestions.length;
+            }
+            
+            setupModal.classList.add('hidden');
+            currentFileName = pendingFileName;
+            startQuiz(pendingQuestions, limit);
+        });
+    }
+
+    if (cancelSetupBtn) {
+        cancelSetupBtn.addEventListener('click', () => {
+            setupModal.classList.add('hidden');
+            window.location.hash = '';
+        });
     }
 
     if (typeof LZString !== 'undefined') {
@@ -180,14 +260,14 @@ document.addEventListener('DOMContentLoaded', () => {
     dropZone.addEventListener('drop', (e) => {
         const file = e.dataTransfer.files[0];
         currentFileName = file.name;
-        handleFile(file);
+        handleFileUpload(file);
     });
 
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
             currentFileName = file.name;
-            handleFile(file);
+            handleFileUpload(file); // Call the defined handler
         }
     });
 
@@ -414,7 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function handleFile(file) {
+    function handleFileUpload(file) {
         if (!file.name.endsWith('.txt') && !file.name.endsWith('.docx')) {
             alert('Vui lòng tải lên file định dạng .txt hoặc .docx');
             return;
@@ -535,7 +615,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        startQuiz(parsedQuestions);
+        showSetupModal(parsedQuestions, currentFileName);
     }
 
     function shuffleArray(array) {
@@ -546,9 +626,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return array;
     }
 
-    function startQuiz(parsedQuestions) {
+    function startQuiz(parsedQuestions, limit) {
         let shuffledQs = [...parsedQuestions];
         shuffleArray(shuffledQs);
+        
+        if (limit) {
+            shuffledQs = shuffledQs.slice(0, limit);
+        }
         
         questions = shuffledQs;
         score = 0;
