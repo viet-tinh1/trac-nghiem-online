@@ -28,14 +28,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // Timer elements
     const floatingTimer = document.getElementById('floating-timer');
     const timeText = document.getElementById('time-text');
+    
+    // History elements
+    const viewHistoryBtn = document.getElementById('view-history-btn');
+    const historyModal = document.getElementById('history-modal');
+    const closeHistoryBtn = document.getElementById('close-history-btn');
+    const historyList = document.getElementById('history-list');
+    const reviewBanner = document.getElementById('review-banner');
+    const exitReviewBtn = document.getElementById('exit-review-btn');
+    const quizTitleDisplay = document.getElementById('quiz-title-display');
 
     let questions = [];
     let score = 0;
     let answeredQuestions = 0;
     let isOneTimeMode = false;
+    let isReviewMode = false;
     let currentQuizId = null;
+    let currentFileName = "Bộ đề trắc nghiệm";
     let timerInterval = null;
     let secondsElapsed = 0;
+    let userAnswers = []; // Store chosen chars for current session
 
     function startTimer() {
         if (timerInterval) return;
@@ -123,12 +135,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     dropZone.addEventListener('drop', (e) => {
         const file = e.dataTransfer.files[0];
+        currentFileName = file.name;
         handleFile(file);
     });
 
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if (file) handleFile(file);
+        if (file) {
+            currentFileName = file.name;
+            handleFile(file);
+        }
     });
 
     resetBtn.addEventListener('click', () => {
@@ -157,6 +173,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeResultBtn) {
         closeResultBtn.addEventListener('click', () => {
             resultModal.classList.add('hidden');
+        });
+    }
+
+    if (viewHistoryBtn) {
+        viewHistoryBtn.addEventListener('click', () => {
+            renderHistory();
+            historyModal.classList.remove('hidden');
+        });
+    }
+
+    if (closeHistoryBtn) {
+        closeHistoryBtn.addEventListener('click', () => {
+            historyModal.classList.add('hidden');
+        });
+    }
+
+    if (exitReviewBtn) {
+        exitReviewBtn.addEventListener('click', () => {
+            isReviewMode = false;
+            reviewBanner.classList.add('hidden');
+            quizSection.classList.add('hidden');
+            uploadSection.classList.remove('hidden');
         });
     }
 
@@ -340,6 +378,10 @@ document.addEventListener('DOMContentLoaded', () => {
         questions = shuffledQs;
         score = 0;
         answeredQuestions = 0;
+        userAnswers = new Array(questions.length).fill(null);
+        isReviewMode = false;
+        reviewBanner.classList.add('hidden');
+        quizTitleDisplay.textContent = currentFileName || "Bài Trắc Nghiệm";
         updateScore();
         
         uploadSection.classList.add('hidden');
@@ -348,42 +390,58 @@ document.addEventListener('DOMContentLoaded', () => {
         renderQuestions();
     }
 
-    function renderQuestions() {
+    function renderQuestions(isReview = false) {
         questionsContainer.innerHTML = '';
         
         questions.forEach((q, index) => {
-            // Card element
             const qCard = document.createElement('div');
             qCard.className = 'question-card';
-            // Stagger animation delay
             qCard.style.animationDelay = `${index * 0.1}s`;
             
-            // Question Text
             const qText = document.createElement('div');
             qText.className = 'question-text';
             qText.textContent = q.text;
             qCard.appendChild(qText);
 
-            // Options container
             const optionsGrid = document.createElement('div');
             optionsGrid.className = 'options-grid';
 
-            // Feedback element
             const feedback = document.createElement('div');
             feedback.className = 'feedback-msg';
 
-            // Loop over options
             q.options.forEach(opt => {
                 const optEl = document.createElement('div');
                 optEl.className = 'option';
+                if (isReview) optEl.classList.add('disabled');
+                
                 optEl.innerHTML = `<strong>${opt.char}.</strong> &nbsp;${opt.text}`;
                 
-                optEl.addEventListener('click', () => {
-                    handleAnswerSelection(qCard, optionsGrid, optEl, opt.char, q.correctAnswer, feedback, index);
-                });
-                
+                if (isReview) {
+                    const pickedChar = userAnswers[index];
+                    if (opt.char === q.correctAnswer) optEl.classList.add('correct');
+                    if (opt.char === pickedChar && pickedChar !== q.correctAnswer) optEl.classList.add('incorrect');
+                } else {
+                    optEl.addEventListener('click', () => {
+                        handleAnswerSelection(qCard, optionsGrid, optEl, opt.char, q.correctAnswer, feedback, index);
+                    });
+                }
                 optionsGrid.appendChild(optEl);
             });
+
+            if (isReview) {
+                const pickedChar = userAnswers[index];
+                feedback.style.display = 'block';
+                if (pickedChar === q.correctAnswer) {
+                    feedback.textContent = '✅ Bạn đã trả lời đúng.';
+                    feedback.className = 'feedback-msg correct-text';
+                } else if (pickedChar) {
+                    feedback.textContent = `❌ Bạn đã chọn ${pickedChar}. Đáp án đúng là ${q.correctAnswer}.`;
+                    feedback.className = 'feedback-msg incorrect-text';
+                } else {
+                    feedback.textContent = `⚪ Bạn chưa trả lời câu này. Đáp án đúng là ${q.correctAnswer}.`;
+                    feedback.className = 'feedback-msg';
+                }
+            }
 
             qCard.appendChild(optionsGrid);
             qCard.appendChild(feedback);
@@ -392,105 +450,120 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleAnswerSelection(card, grid, selectedEl, selectedChar, correctChar, feedbackEl, itemIndex) {
-        // Prevent double selecting
         if (card.classList.contains('answered')) return;
         card.classList.add('answered');
 
         const options = grid.querySelectorAll('.option');
         options.forEach(opt => opt.classList.add('disabled'));
 
+        userAnswers[itemIndex] = selectedChar;
         answeredQuestions++;
         
-        if (answeredQuestions === 1) {
-            startTimer();
-        }
+        if (answeredQuestions === 1) startTimer();
 
-        // Some questions might not have answers specified explicitly
         if (!correctChar) {
             selectedEl.classList.add('selected');
-            feedbackEl.textContent = 'Câu hỏi này không có đáp án mẫu trong file.';
-            feedbackEl.style.color = 'var(--text-secondary)';
+            feedbackEl.textContent = 'Câu hỏi này không có đáp án mẫu.';
             feedbackEl.style.display = 'block';
             updateScore();
             return;
         }
 
         const isCorrect = selectedChar === correctChar;
-        
         if (isCorrect) {
             selectedEl.classList.add('correct');
             score++;
-            feedbackEl.textContent = '🎉 Tuyệt vời! Bạn chọn đúng rồi.';
+            feedbackEl.textContent = '🎉 Tuyệt vời!';
             feedbackEl.className = 'feedback-msg correct-text';
         } else {
             selectedEl.classList.add('incorrect');
-            // Find correct one and highlight it
-            const correctText = options[0].innerText; // Just for fallback
-            let foundCorrect = false;
             options.forEach(opt => {
-                if (opt.innerHTML.includes(`<strong>${correctChar}.</strong>`)) {
-                    opt.classList.add('correct');
-                    foundCorrect = true;
-                }
+                if (opt.innerHTML.includes(`<strong>${correctChar}.</strong>`)) opt.classList.add('correct');
             });
-            
-            feedbackEl.textContent = `❌ Rất tiếc, đáp án đúng là ${correctChar}.`;
+            feedbackEl.textContent = `❌ Đáp án đúng là ${correctChar}.`;
             feedbackEl.className = 'feedback-msg incorrect-text';
         }
 
         updateScore();
         
-        if (itemIndex !== undefined) {
-            const cards = document.querySelectorAll('.question-card');
-            if (itemIndex + 1 < cards.length && answeredQuestions < questions.length) {
-                setTimeout(() => {
-                    cards[itemIndex + 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 600);
-            }
+        const cards = document.querySelectorAll('.question-card');
+        if (itemIndex + 1 < cards.length && answeredQuestions < questions.length) {
+            setTimeout(() => {
+                cards[itemIndex + 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 600);
         }
         
         if (answeredQuestions === questions.length) {
             if (timerInterval) clearInterval(timerInterval);
-            
             setTimeout(() => {
-                if (isOneTimeMode) {
-                    localStorage.setItem('quiz_completed_' + currentQuizId, 'true');
-                    if (retryBtn) retryBtn.style.display = 'none';
-                } else {
-                    if (retryBtn) retryBtn.style.display = 'block';
-                }
+                const point = (score / questions.length) * 10;
+                const pointFormatted = parseFloat(point.toFixed(2));
+                let rank = 'Yếu 😞';
+                if (point >= 8) rank = 'Giỏi 🏆';
+                else if (point >= 6) rank = 'Khá 🌟';
+                else if (point >= 4) rank = 'Trung bình 😐';
 
-                if (resultModal) {
-                    const point = (score / questions.length) * 10;
-                    const pointFormatted = parseFloat(point.toFixed(2));
-                    
-                    let rankText = 'Yếu 😞';
-                    let rankColor = 'var(--error-color)';
-                    if (point >= 8) {
-                        rankText = 'Giỏi 🏆';
-                        rankColor = 'var(--success-color)';
-                    } else if (point >= 6) {
-                        rankText = 'Khá 🌟';
-                        rankColor = '#3b82f6'; // Blue
-                    } else if (point >= 4) {
-                        rankText = 'Trung bình 😐';
-                        rankColor = '#eab308'; // Yellow
-                    }
-
-                    finalScore.textContent = `${pointFormatted}/10`;
-                    if (finalRank) {
-                        finalRank.innerHTML = `${rankText} <span style="font-size: 0.9rem; color: var(--text-secondary); font-weight: normal;">(Đúng ${score}/${questions.length} câu)</span>`;
-                        finalRank.style.color = rankColor;
-                    }
-                    if (finalTime) {
-                        finalTime.textContent = timeText ? timeText.textContent : '00:00';
-                    }
-
-                    resultModal.classList.remove('hidden');
-                }
+                finalScore.textContent = `${pointFormatted}/10`;
+                finalRank.innerHTML = `${rank} <span style="font-size:0.9rem; font-weight:normal;">(Đúng ${score}/${questions.length})</span>`;
+                finalTime.textContent = timeText.textContent;
+                
+                saveAttemptToHistory(pointFormatted, rank);
+                resultModal.classList.remove('hidden');
             }, 600);
         }
     }
+
+    function saveAttemptToHistory(point, rank) {
+        const attempt = {
+            id: Date.now(),
+            fileName: currentFileName,
+            date: new Date().toLocaleString('vi-VN'),
+            score: score,
+            total: questions.length,
+            point: point,
+            rank: rank,
+            timeSpent: timeText.textContent,
+            questions: JSON.parse(JSON.stringify(questions)),
+            userAnswers: [...userAnswers]
+        };
+        let history = JSON.parse(localStorage.getItem('quiz_history') || '[]');
+        history.unshift(attempt);
+        if (history.length > 20) history = history.slice(0, 20);
+        localStorage.setItem('quiz_history', JSON.stringify(history));
+    }
+
+    function renderHistory() {
+        const history = JSON.parse(localStorage.getItem('quiz_history') || '[]');
+        historyList.innerHTML = history.length === 0 ? '<div class="empty-history">Chưa có lịch sử làm bài.</div>' : '';
+        history.forEach((item, index) => {
+            const el = document.createElement('div');
+            el.className = 'history-item';
+            el.innerHTML = `
+                <div class="history-info">
+                    <h4>${item.fileName}</h4>
+                    <p>📅 ${item.date} | 🏆 ${item.point}/10 (${item.rank})</p>
+                    <p>⏱ ${item.timeSpent} | Đúng: ${item.score}/${item.total}</p>
+                </div>
+                <button class="btn-view" onclick="viewHistoryDetail(${index})">Xem lại</button>
+            `;
+            historyList.appendChild(el);
+        });
+    }
+
+    window.viewHistoryDetail = (index) => {
+        const history = JSON.parse(localStorage.getItem('quiz_history') || '[]');
+        const item = history[index];
+        if (!item) return;
+        historyModal.classList.add('hidden');
+        isReviewMode = true;
+        questions = item.questions;
+        userAnswers = item.userAnswers;
+        uploadSection.classList.add('hidden');
+        quizSection.classList.remove('hidden');
+        reviewBanner.classList.remove('hidden');
+        quizTitleDisplay.textContent = item.fileName;
+        renderQuestions(true);
+    };
 
     function updateScore() {
         scoreDisplay.textContent = `Điểm: ${score}/${questions.length} (Đã làm: ${answeredQuestions})`;

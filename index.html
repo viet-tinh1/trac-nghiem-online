@@ -15,6 +15,11 @@
 
     <main class="container">
         <header class="header">
+            <div class="top-nav">
+                <button id="view-history-btn" class="btn-icon">
+                    <span>📜</span> Lịch sử
+                </button>
+            </div>
             <h1>Quiz<span>Pro</span></h1>
             <p>Tải lên file câu hỏi của bạn và làm bài ngay lập tức</p>
         </header>
@@ -49,7 +54,13 @@ D. Lựa chọn 4
 
         <section id="quiz-section" class="quiz-container hidden">
             <div class="quiz-header">
-                <h2>Bài Trắc Nghiệm</h2>
+                <div id="review-banner" class="review-banner hidden">
+                    <span>🔍 Chế độ xem lại kết quả</span>
+                    <button id="exit-review-btn" class="btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Thoát xem lại</button>
+                </div>
+                <div class="quiz-title-area">
+                    <h2 id="quiz-title-display">Bài Trắc Nghiệm</h2>
+                </div>
                 <div class="quiz-stats">
                     <span id="score-display">Điểm: 0/0</span>
                     <button id="share-btn" class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Chia sẻ</button>
@@ -74,6 +85,19 @@ D. Lựa chọn 4
             <p style="font-size: 1.1rem; margin-bottom: 1.5rem; color: var(--text-secondary);">Thời gian làm bài: <strong id="final-time" style="color: #fff; font-size: 1.2rem;">00:00</strong></p>
             <button id="retry-btn" class="btn-primary" style="width: 100%; margin-bottom: 0.8rem;">Làm Lại Bài</button>
             <button id="close-result-btn" class="btn-secondary" style="width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.2);">Xem Lại Các Câu Đã Chọn</button>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="modal hidden">
+        <div class="modal-content glassmorphism history-modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0;">Lịch sử làm bài</h3>
+                <button id="close-history-btn" style="background: transparent; color: white; font-size: 1.5rem;">&times;</button>
+            </div>
+            <div id="history-list" class="history-list">
+                <!-- History items will be injected here -->
+            </div>
         </div>
     </div>
 
