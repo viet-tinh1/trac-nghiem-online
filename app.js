@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const shareLinkContainer = document.getElementById('share-link-container');
     const shareLinkInput = document.getElementById('share-link-input');
     const copyLinkBtn = document.getElementById('copy-link-btn');
+    const shortenLinkBtn = document.getElementById('shorten-link-btn');
+    const shortenStatus = document.getElementById('shorten-status');
     const oneTimeCheckbox = document.getElementById('one-time-checkbox');
     
     // Result elements
@@ -276,6 +278,39 @@ document.addEventListener('DOMContentLoaded', () => {
             document.execCommand('copy');
             copyLinkBtn.textContent = 'Đã Copy!';
             setTimeout(() => copyLinkBtn.textContent = 'Copy Link', 2000);
+        });
+    }
+
+    if (shortenLinkBtn) {
+        shortenLinkBtn.addEventListener('click', async () => {
+            const longUrl = shareLinkInput.value;
+            if (!longUrl) return;
+
+            shortenStatus.textContent = "⚡ Đang xử lý...";
+            shortenStatus.style.color = "var(--text-secondary)";
+            shortenLinkBtn.disabled = true;
+
+            try {
+                // is.gd API allows simple creation.
+                // Note: This may fail due to CORS on some networks/browsers.
+                const response = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}`);
+                const data = await response.json();
+
+                if (data.shorturl) {
+                    shareLinkInput.value = data.shorturl;
+                    shortenStatus.textContent = "✅ Đã rút gọn thành công!";
+                    shortenStatus.style.color = "var(--success-color)";
+                } else {
+                    throw new Error("API error");
+                }
+            } catch (err) {
+                console.error("Lỗi rút gọn:", err);
+                const manualUrl = `https://tinyurl.com/create.php?url=${encodeURIComponent(longUrl)}`;
+                shortenStatus.innerHTML = `Lỗi tự động. <a href="${manualUrl}" target="_blank" style="color:#3b82f6; text-decoration:underline; font-weight:bold;">Bấm vào đây</a> để rút gọn bằng TinyURL.`;
+                shortenStatus.style.color = "var(--error-color)";
+            } finally {
+                shortenLinkBtn.disabled = false;
+            }
         });
     }
 
