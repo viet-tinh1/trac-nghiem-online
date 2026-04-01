@@ -650,15 +650,16 @@ button {
 
 .quiz-controls-group {
     display: flex;
-    gap: 0.5rem;
-    align-items: center;
+    flex-direction: column;
+    gap: 0.3rem;
+    align-items: stretch;
     flex-shrink: 0;
 }
 
 .review-filter-area {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    flex-direction: column;
+    gap: 0.3rem;
     flex-wrap: nowrap;
 }
 
@@ -666,13 +667,14 @@ button {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: white;
-    padding: 0.4rem 0.6rem;
-    border-radius: 8px;
-    font-size: 0.8rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
     cursor: pointer;
     transition: 0.2s;
     outline: none;
     flex-shrink: 0;
+    min-width: 140px;
 }
 
 .filter-select:hover {
