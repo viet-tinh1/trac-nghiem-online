@@ -189,6 +189,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Close modals on background click
+    [shareModal, resultModal, historyModal].forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+            }
+        });
+    });
+
     if (exitReviewBtn) {
         exitReviewBtn.addEventListener('click', () => {
             isReviewMode = false;
@@ -533,21 +542,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderHistory() {
-        const history = JSON.parse(localStorage.getItem('quiz_history') || '[]');
-        historyList.innerHTML = history.length === 0 ? '<div class="empty-history">Chưa có lịch sử làm bài.</div>' : '';
-        history.forEach((item, index) => {
-            const el = document.createElement('div');
-            el.className = 'history-item';
-            el.innerHTML = `
-                <div class="history-info">
-                    <h4>${item.fileName}</h4>
-                    <p>📅 ${item.date} | 🏆 ${item.point}/10 (${item.rank})</p>
-                    <p>⏱ ${item.timeSpent} | Đúng: ${item.score}/${item.total}</p>
-                </div>
-                <button class="btn-view" onclick="viewHistoryDetail(${index})">Xem lại</button>
-            `;
-            historyList.appendChild(el);
-        });
+        try {
+            const history = JSON.parse(localStorage.getItem('quiz_history') || '[]');
+            historyList.innerHTML = history.length === 0 ? '<div class="empty-history">Chưa có lịch sử làm bài.</div>' : '';
+            history.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'history-item';
+                el.innerHTML = `
+                    <div class="history-info">
+                        <h4>${item.fileName || "Hồ sơ trắc nghiệm"}</h4>
+                        <p>📅 ${item.date} | 🏆 ${item.point}/10 (${item.rank})</p>
+                        <p>⏱ ${item.timeSpent} | Đúng: ${item.score}/${item.total}</p>
+                    </div>
+                    <button class="btn-view" onclick="viewHistoryDetail(${index})">Xem lại</button>
+                `;
+                historyList.appendChild(el);
+            });
+        } catch (e) {
+            console.error("Lỗi khi tải lịch sử:", e);
+            historyList.innerHTML = '<div class="empty-history">Lỗi khi tải lịch sử.</div>';
+        }
     }
 
     window.viewHistoryDetail = (index) => {
