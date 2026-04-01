@@ -50,6 +50,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const prevPageBtn = document.getElementById('prev-page-btn');
     const nextPageBtn = document.getElementById('next-page-btn');
     const pageIndicator = document.getElementById('page-indicator');
+    
+    // View & Sync Controls
+    const viewModeSelect = document.getElementById('view-mode-select');
+    const autoNextSelect = document.getElementById('auto-next-select');
+    const viewModeSelectReview = document.getElementById('view-mode-select-review');
+    const autoNextSelectReview = document.getElementById('auto-next-select-review');
 
     let questions = [];
     let score = 0;
@@ -65,6 +71,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentReviewFilter = 'all';
     let palettePageSize = 50;
     let currentPalettePage = 0;
+    let viewMode = 'single';
+    let autoNextDelay = 0;
+    let autoNextTimeout = null;
 
     function startTimer() {
         if (timerInterval) return;
@@ -288,6 +297,29 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    [viewModeSelect, viewModeSelectReview].forEach(select => {
+        if (select) {
+            select.addEventListener('change', (e) => {
+                viewMode = e.target.value;
+                if (viewModeSelect) viewModeSelect.value = viewMode;
+                if (viewModeSelectReview) viewModeSelectReview.value = viewMode;
+                renderQuestions(isReviewMode, currentReviewFilter);
+                jumpToQuestion(currentQuestionIndex);
+            });
+        }
+    });
+
+    [autoNextSelect, autoNextSelectReview].forEach(select => {
+        if (select) {
+            select.addEventListener('change', (e) => {
+                autoNextDelay = parseInt(e.target.value);
+                if (autoNextSelect) autoNextSelect.value = autoNextDelay;
+                if (autoNextSelectReview) autoNextSelectReview.value = autoNextDelay;
+                resetAutoNextTimer();
+            });
+        }
+    });
 
 
 
@@ -523,6 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
         answeredQuestions = 0;
         userAnswers = new Array(questions.length).fill(null);
         isReviewMode = false;
+        currentQuestionIndex = 0;
         reviewBanner.classList.add('hidden');
         quizTitleDisplay.textContent = currentFileName || "Bài Trắc Nghiệm";
         updateScore();
@@ -533,6 +566,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPalette(false);
         renderQuestions();
         updateNavButtons();
+        resetAutoNextTimer();
     }
 
     function startReview(qs, ans, name) {
@@ -540,6 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
         questions = qs;
         userAnswers = ans;
         currentFileName = name;
+        currentQuestionIndex = 0;
         
         uploadSection.classList.add('hidden');
         quizSection.classList.remove('hidden');
@@ -549,6 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPalette(true);
         renderQuestions(true, currentReviewFilter);
         updateNavButtons();
+        resetAutoNextTimer();
     }
 
     function renderPalette(isReview) {
@@ -585,8 +621,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            item.addEventListener('click', () => jumpToQuestion(index));
+            item.addEventListener('click', () => {
+                jumpToQuestion(index);
+                if (autoNextDelay > 0) resetAutoNextTimer();
+            });
             questionPalette.appendChild(item);
+        }
+    }
+
+    function resetAutoNextTimer() {
+        if (autoNextTimeout) clearTimeout(autoNextTimeout);
+        if (autoNextDelay > 0) {
+            autoNextTimeout = setTimeout(() => {
+                navigateQuestion(1);
+            }, autoNextDelay);
         }
     }
 
@@ -611,6 +659,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function jumpToQuestion(index) {
         currentQuestionIndex = index;
         
+        // Reset auto-next timer whenever we move to a question
+        resetAutoNextTimer();
+
         // Auto-switch palette page if needed
         const targetPage = Math.floor(index / palettePageSize);
         if (targetPage !== currentPalettePage) {
@@ -623,28 +674,54 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeItem = document.getElementById(`palette-item-${index}`);
         if (activeItem) activeItem.classList.add('active');
         
-        // Scroll to question
-        const cards = document.querySelectorAll('.question-card');
-        if (isReviewMode && currentReviewFilter === 'incorrect') {
-            // In "Incorrect only" mode, we need to find the card that corresponds to this index
-            // But actually, it's easier to just navigate through the visible cards if we filter
-            // Let's refine this to scroll to the card with data-index
+        if (viewMode === 'single') {
+            const cards = document.querySelectorAll('.question-card');
+            cards.forEach(card => {
+                const cardIndex = parseInt(card.getAttribute('data-index'));
+                if (cardIndex === index) {
+                    card.style.display = 'block';
+                    // Scroll to top of the card/page for better focus
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        } else {
+            // Scroll to question in list mode
             const targetCard = document.querySelector(`.question-card[data-index="${index}"]`);
             if (targetCard) {
+                targetCard.style.display = 'block'; // Ensure it's not hidden by filter
                 targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        } else {
-            if (cards[index]) {
-                cards[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
         updateNavButtons();
     }
 
     function navigateQuestion(direction) {
-        let newIndex = currentQuestionIndex + direction;
-        if (newIndex >= 0 && newIndex < questions.length) {
+        let newIndex = currentQuestionIndex;
+        
+        if (isReviewMode && currentReviewFilter === 'incorrect') {
+            // Smart Skip: find next/prev incorrect question
+            let step = direction > 0 ? 1 : -1;
+            let i = currentQuestionIndex + step;
+            while (i >= 0 && i < questions.length) {
+                const ua = userAnswers[i];
+                const correct = questions[i].correctAnswer;
+                if (ua !== correct && ua !== null) {
+                    newIndex = i;
+                    break;
+                }
+                i += step;
+            }
+        } else {
+            newIndex = currentQuestionIndex + direction;
+        }
+
+        if (newIndex >= 0 && newIndex < questions.length && newIndex !== currentQuestionIndex) {
             jumpToQuestion(newIndex);
+        } else if (direction > 0 && newIndex === currentQuestionIndex && autoNextDelay > 0) {
+            // If we're at the end in auto-next mode, stop timer
+            if (autoNextTimeout) clearTimeout(autoNextTimeout);
         }
     }
 
@@ -669,6 +746,13 @@ document.addEventListener('DOMContentLoaded', () => {
             qCard.className = 'question-card';
             qCard.setAttribute('data-index', index);
             qCard.style.animationDelay = `${index * 0.05}s`;
+            
+            // Handle Single View Mode Visibility
+            if (viewMode === 'single' && index !== currentQuestionIndex) {
+                qCard.style.display = 'none';
+            } else if (viewMode === 'single' && index === currentQuestionIndex) {
+                qCard.style.display = 'block';
+            }
             
             // Sequential Header
             const qHeader = document.createElement('h3');
@@ -764,11 +848,17 @@ document.addEventListener('DOMContentLoaded', () => {
         updateScore();
         updatePaletteStatus(itemIndex, false);
         
-        const cards = document.querySelectorAll('.question-card');
-        if (itemIndex + 1 < cards.length && answeredQuestions < questions.length) {
-            setTimeout(() => {
-                jumpToQuestion(itemIndex + 1);
-            }, 600);
+        // In "Auto-Next" mode, reset timer after selecting
+        if (autoNextDelay > 0) {
+            resetAutoNextTimer();
+        } else {
+            // Standard small delay for UX
+            const cards = document.querySelectorAll('.question-card');
+            if (itemIndex + 1 < cards.length && answeredQuestions < questions.length) {
+                setTimeout(() => {
+                    jumpToQuestion(itemIndex + 1);
+                }, 600);
+            }
         }
         
         if (answeredQuestions === questions.length) {
