@@ -289,20 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (reviewFilter) {
-        reviewFilter.addEventListener('change', (e) => {
-            currentReviewFilter = e.target.value;
-            renderQuestions(true, currentReviewFilter);
-        });
-    }
 
-    if (prevQBtn) {
-        prevQBtn.addEventListener('click', () => navigateQuestion(-1));
-    }
-
-    if (nextQBtn) {
-        nextQBtn.addEventListener('click', () => navigateQuestion(1));
-    }
 
     if (shareBtn) {
         shareBtn.addEventListener('click', () => {
