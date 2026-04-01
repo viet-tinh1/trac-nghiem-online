@@ -291,22 +291,25 @@ document.addEventListener('DOMContentLoaded', () => {
             shortenLinkBtn.disabled = true;
 
             try {
-                // is.gd API allows simple creation.
-                // Note: This may fail due to CORS on some networks/browsers.
-                const response = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}`);
+                // Sử dụng proxy để gửi yêu cầu đến is.gd (hỗ trợ các URL dài hơn TinyURL)
+                const apiUrl = `https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}`;
+                const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`);
                 const data = await response.json();
+                const result = JSON.parse(data.contents);
 
-                if (data.shorturl) {
-                    shareLinkInput.value = data.shorturl;
+                if (result.shorturl) {
+                    shareLinkInput.value = result.shorturl;
                     shortenStatus.textContent = "✅ Đã rút gọn thành công!";
                     shortenStatus.style.color = "var(--success-color)";
+                } else if (result.errorcode === 4) {
+                    throw new Error("URL quá dài cho is.gd");
                 } else {
-                    throw new Error("API error");
+                    throw new Error("Lỗi API");
                 }
             } catch (err) {
                 console.error("Lỗi rút gọn:", err);
-                const manualUrl = `https://tinyurl.com/create.php?url=${encodeURIComponent(longUrl)}`;
-                shortenStatus.innerHTML = `Lỗi tự động. <a href="${manualUrl}" target="_blank" style="color:#3b82f6; text-decoration:underline; font-weight:bold;">Bấm vào đây</a> để rút gọn bằng TinyURL.`;
+                // Nếu tự động thất bại, mở trang rút gọn chuyên sâu Bitly/TinyURL
+                shortenStatus.innerHTML = `Link bài quá dài để rút gọn tự động. Hãy <a href="https://tinyurl.com/create.php?url=${encodeURIComponent(longUrl)}" target="_blank" style="color:#3b82f6; text-decoration:underline; font-weight:bold;">Bấm vào đây để thử lại</a> hoặc dùng Bitly.com để rút gọn thủ công.`;
                 shortenStatus.style.color = "var(--error-color)";
             } finally {
                 shortenLinkBtn.disabled = false;
