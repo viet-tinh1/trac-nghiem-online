@@ -89,6 +89,42 @@ document.addEventListener('DOMContentLoaded', () => {
     let pendingQuestions = [];
     let pendingFileName = "";
     let fullQuestionBank = []; // Permanent store for current file
+    
+    // Load persisted settings
+    function loadSettings() {
+        const savedViewMode = localStorage.getItem('quiz_view_mode');
+        const savedAutoNext = localStorage.getItem('quiz_auto_next');
+        const savedQuizMode = localStorage.getItem('quiz_mode');
+        const savedLimit = localStorage.getItem('quiz_exam_limit');
+
+        if (savedViewMode) {
+            viewMode = savedViewMode;
+            if (viewModeSelect) viewModeSelect.value = viewMode;
+            if (viewModeSelectReview) viewModeSelectReview.value = viewMode;
+        }
+        if (savedAutoNext) {
+            autoNextDelay = parseInt(savedAutoNext);
+            if (autoNextSelect) autoNextSelect.value = savedAutoNext;
+            if (autoNextSelectReview) autoNextSelectReview.value = savedAutoNext;
+        }
+        if (savedQuizMode && quizModeRadios) {
+            quizModeRadios.forEach(r => {
+                if (r.value === savedQuizMode) r.checked = true;
+            });
+            updateSetupModeUI(savedQuizMode);
+        }
+        if (savedLimit && setupLimit) {
+            setupLimit.value = savedLimit;
+        }
+    }
+
+    function saveSettings() {
+        localStorage.setItem('quiz_view_mode', viewMode);
+        localStorage.setItem('quiz_auto_next', autoNextDelay.toString());
+        const selectedQuizMode = Array.from(quizModeRadios).find(r => r.checked)?.value;
+        if (selectedQuizMode) localStorage.setItem('quiz_mode', selectedQuizMode);
+        if (setupLimit) localStorage.setItem('quiz_exam_limit', setupLimit.value);
+    }
 
     function startTimer() {
         if (timerInterval) return;
@@ -234,6 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             setupModal.classList.add('hidden');
             currentFileName = pendingFileName;
+            saveSettings(); // Persist the mode and limit
             startQuiz(pendingQuestions, limit);
         });
     }
@@ -401,6 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 viewMode = e.target.value;
                 if (viewModeSelect) viewModeSelect.value = viewMode;
                 if (viewModeSelectReview) viewModeSelectReview.value = viewMode;
+                saveSettings();
                 renderQuestions(isReviewMode, currentReviewFilter);
                 jumpToQuestion(currentQuestionIndex);
             });
@@ -413,6 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 autoNextDelay = parseInt(e.target.value);
                 if (autoNextSelect) autoNextSelect.value = autoNextDelay;
                 if (autoNextSelectReview) autoNextSelectReview.value = autoNextDelay;
+                saveSettings();
                 resetAutoNextTimer();
             });
         }
@@ -1036,4 +1075,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateScore() {
         scoreDisplay.textContent = `Điểm: ${score}/${questions.length} (Đã làm: ${answeredQuestions})`;
     }
+
+    // Apply persisted settings
+    loadSettings();
 });
