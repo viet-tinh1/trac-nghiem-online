@@ -83,7 +83,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (decodedStr) {
-                    const data = JSON.parse(decodedStr);
+                    let data = JSON.parse(decodedStr);
+                    
+                    // Convert compact format (v2) to original format if needed
+                    if (data.q && !data.questions) {
+                        data.questions = data.q.map(item => ({
+                            text: item[0],
+                            options: item[1].map(optStr => {
+                                const dotIndex = optStr.indexOf('.');
+                                return {
+                                    char: optStr.substring(0, dotIndex),
+                                    text: optStr.substring(dotIndex + 1).trim()
+                                };
+                            }),
+                            correctAnswer: item[2]
+                        }));
+                        data.oneTime = data.o;
+                        data.id = data.i;
+                    }
+
                     if (data && data.questions) {
                         if (data.oneTime && data.id) {
                             isOneTimeMode = true;
@@ -231,15 +249,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (generateLinkBtn) {
         generateLinkBtn.addEventListener('click', () => {
-            const data = {
-                questions: questions,
-                oneTime: oneTimeCheckbox.checked,
-                id: 'quiz_' + Math.random().toString(36).substring(2, 9)
+            // Create a COMPACT version of the data to keep URL short
+            const compactData = {
+                q: questions.map(q => [
+                    q.text,
+                    q.options.map(o => `${o.char}.${o.text}`),
+                    q.correctAnswer
+                ]),
+                o: oneTimeCheckbox.checked,
+                i: 'quiz_' + Math.random().toString(36).substring(2, 7)
             };
-            const jsonStr = JSON.stringify(data);
+            
+            const jsonStr = JSON.stringify(compactData);
             const compressed = LZString.compressToEncodedURIComponent(jsonStr);
             
-            // Safer URL generation: removes previous hash if any
             const baseUrl = window.location.href.split('#')[0];
             const url = baseUrl + '#' + compressed;
             shareLinkInput.value = url;
