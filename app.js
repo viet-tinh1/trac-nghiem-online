@@ -143,6 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     if (data && data.questions) {
+                        currentQuestions = data.questions; // Store for setup
                         if (data.oneTime && data.id) {
                             isOneTimeMode = true;
                             currentQuizId = data.id;
@@ -151,8 +152,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 return;
                             }
                         }
+                        const sharedName = data.id || "Quiz Chia Sẻ";
                         setTimeout(() => {
-                            showSetupModal(data.questions, currentFileName);
+                            showSetupModal(currentQuestions, sharedName);
                         }, 200);
                     }
                 }
@@ -166,7 +168,9 @@ document.addEventListener('DOMContentLoaded', () => {
         pendingQuestions = qs;
         pendingFileName = fileName || "Bộ đề trắc nghiệm";
         
-        if (setupTotal) setupTotal.textContent = `Tổng số câu hỏi: ${qs.length}`;
+        const setupTitle = document.getElementById('setup-title');
+        if (setupTitle) setupTitle.textContent = pendingFileName;
+        if (setupTotal) setupTotal.textContent = `Bộ đề: ${pendingFileName} (${qs.length} câu hỏi)`;
         if (setupLimitMax) setupLimitMax.textContent = qs.length;
         if (setupLimit) {
             setupLimit.max = qs.length;
@@ -179,6 +183,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         updateSetupModeUI('practice');
         
+        // Hide upload section to avoid background clutter
+        uploadSection.classList.add('hidden');
         setupModal.classList.remove('hidden');
     }
 
