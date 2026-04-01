@@ -17,6 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const copyLinkBtn = document.getElementById('copy-link-btn');
     const shortenLinkBtn = document.getElementById('shorten-link-btn');
     const shortenStatus = document.getElementById('shorten-status');
+    const qrContainer = document.getElementById('qr-container');
+    const qrCode = document.getElementById('qr-code');
     const oneTimeCheckbox = document.getElementById('one-time-checkbox');
     
     // Result elements
@@ -269,6 +271,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const url = baseUrl + '#' + compressed;
             shareLinkInput.value = url;
             shareLinkContainer.classList.remove('hidden');
+
+            // Generate QR Code as a fallback
+            if (url.length < 2500) {
+                qrCode.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}`;
+                qrContainer.classList.remove('hidden');
+            } else {
+                qrContainer.classList.add('hidden');
+                shortenStatus.innerHTML = `⚠️ Bài quá lớn (${questions.length} câu), link cực dài. Một số máy có thể không mở được. Bạn nên dùng Bitly.com để rút gọn thủ công.`;
+            }
         });
     }
 

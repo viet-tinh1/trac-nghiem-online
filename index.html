@@ -114,9 +114,13 @@ D. Lựa chọn 4
             <button id="generate-link-btn" class="btn-primary" style="width: 100%">Tạo Link Chia Sẻ</button>
             <div id="share-link-container" class="hidden" style="margin-top: 1rem;">
                 <input type="text" id="share-link-input" readonly style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: white; margin-bottom: 0.5rem; font-size: 0.8rem;">
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
-                    <button id="copy-link-btn" class="btn-secondary" style="flex: 1;">Copy Link</button>
-                    <button id="shorten-link-btn" class="btn-primary" style="flex: 1; padding: 0.5rem; font-size: 0.8rem; background: #3b82f6;">⚡ Rút gọn (is.gd)</button>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.8rem;">
+                    <button id="copy-link-btn" class="btn-secondary" style="flex: 1; padding: 0.5rem; font-size: 0.8rem;">Copy Link</button>
+                    <button id="shorten-link-btn" class="btn-primary" style="flex: 1; padding: 0.5rem; font-size: 0.8rem; background: #3b82f6;">⚡ Rút gọn</button>
+                </div>
+                <div id="qr-container" class="hidden" style="text-align: center; margin: 1rem 0; padding: 1rem; background: white; border-radius: 12px; display: inline-block; width: 100%;">
+                    <p style="color: #333; font-size: 0.75rem; margin-bottom: 0.5rem; font-weight: bold;">Hoặc quét mã QR để mở (Dành cho link cực dài):</p>
+                    <img id="qr-code" src="" alt="QR Code" style="width: 150px; height: 150px;">
                 </div>
                 <p id="shorten-status" style="font-size: 0.75rem; color: var(--text-secondary); text-align: center; margin-top: 0.3rem;"></p>
             </div>
