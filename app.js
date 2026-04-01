@@ -47,6 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const reviewFilter = document.getElementById('review-filter');
     const prevQBtn = document.getElementById('prev-q-btn');
     const nextQBtn = document.getElementById('next-q-btn');
+    const prevPageBtn = document.getElementById('prev-page-btn');
+    const nextPageBtn = document.getElementById('next-page-btn');
+    const pageIndicator = document.getElementById('page-indicator');
 
     let questions = [];
     let score = 0;
@@ -60,6 +63,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let userAnswers = []; // Store chosen chars for current session
     let currentQuestionIndex = 0;
     let currentReviewFilter = 'all';
+    let palettePageSize = 50;
+    let currentPalettePage = 0;
 
     function startTimer() {
         if (timerInterval) return;
@@ -190,6 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.hash = '';
         resetTimer();
         updateScore();
+        currentPalettePage = 0;
         if (questionPalette) questionPalette.innerHTML = '';
     });
 
@@ -263,6 +269,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (nextQBtn) {
         nextQBtn.addEventListener('click', () => navigateQuestion(1));
+    }
+
+    if (prevPageBtn) {
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPalettePage > 0) {
+                currentPalettePage--;
+                renderPalette(isReviewMode);
+            }
+        });
+    }
+
+    if (nextPageBtn) {
+        nextPageBtn.addEventListener('click', () => {
+            if ((currentPalettePage + 1) * palettePageSize < questions.length) {
+                currentPalettePage++;
+                renderPalette(isReviewMode);
+            }
+        });
     }
 
     if (reviewFilter) {
@@ -544,52 +568,70 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!questionPalette) return;
         questionPalette.innerHTML = '';
         
-        questions.forEach((_, index) => {
+        const start = currentPalettePage * palettePageSize;
+        const end = Math.min(start + palettePageSize, questions.length);
+        
+        // Update pagination UI
+        if (pageIndicator) {
+            const totalPages = Math.ceil(questions.length / palettePageSize);
+            pageIndicator.textContent = `Trang ${currentPalettePage + 1} / ${totalPages || 1}`;
+        }
+        if (prevPageBtn) prevPageBtn.disabled = currentPalettePage === 0;
+        if (nextPageBtn) nextPageBtn.disabled = (currentPalettePage + 1) * palettePageSize >= questions.length;
+        
+        for (let index = start; index < end; index++) {
             const item = document.createElement('div');
             item.className = 'palette-item';
             item.textContent = index + 1;
             item.id = `palette-item-${index}`;
             
-            if (index === 0) item.classList.add('active');
+            if (index === currentQuestionIndex) item.classList.add('active');
             
-            if (isReview) {
-                const ua = userAnswers[index];
-                const correct = questions[index].correctAnswer;
+            const ua = userAnswers[index];
+            const correct = questions[index].correctAnswer;
+            
+            if (ua !== null) {
                 if (ua === correct) {
                     item.classList.add('correct');
-                } else if (ua !== null) {
+                } else {
                     item.classList.add('incorrect');
-                }
-            } else {
-                if (userAnswers[index] !== null) {
-                    item.classList.add('answered');
                 }
             }
             
             item.addEventListener('click', () => jumpToQuestion(index));
             questionPalette.appendChild(item);
-        });
+        }
     }
 
     function updatePaletteStatus(index, isReview) {
         const item = document.getElementById(`palette-item-${index}`);
         if (!item) return;
         
-        if (isReview) {
-            const ua = userAnswers[index];
-            const correct = questions[index].correctAnswer;
-            item.classList.remove('correct', 'incorrect');
-            if (ua === correct) item.classList.add('correct');
-            else if (ua !== null) item.classList.add('incorrect');
-        } else {
-            if (userAnswers[index] !== null) item.classList.add('answered');
+        const ua = userAnswers[index];
+        const correct = questions[index].correctAnswer;
+        
+        item.classList.remove('correct', 'incorrect', 'answered');
+        
+        if (ua !== null) {
+            if (ua === correct) {
+                item.classList.add('correct');
+            } else {
+                item.classList.add('incorrect');
+            }
         }
     }
 
     function jumpToQuestion(index) {
         currentQuestionIndex = index;
         
-        // Update palette UI
+        // Auto-switch palette page if needed
+        const targetPage = Math.floor(index / palettePageSize);
+        if (targetPage !== currentPalettePage) {
+            currentPalettePage = targetPage;
+            renderPalette(isReviewMode);
+        }
+
+        // Update palette UI active state
         document.querySelectorAll('.palette-item').forEach(p => p.classList.remove('active'));
         const activeItem = document.getElementById(`palette-item-${index}`);
         if (activeItem) activeItem.classList.add('active');
@@ -641,9 +683,15 @@ document.addEventListener('DOMContentLoaded', () => {
             qCard.setAttribute('data-index', index);
             qCard.style.animationDelay = `${index * 0.05}s`;
             
+            // Sequential Header
+            const qHeader = document.createElement('h3');
+            qHeader.className = 'question-number-header';
+            qHeader.textContent = `Câu ${index + 1}`;
+            qCard.appendChild(qHeader);
+
             const qText = document.createElement('div');
             qText.className = 'question-text';
-            qText.textContent = q.text;
+            qText.textContent = q.text; // Original text (e.g. "Câu 137: ...")
             qCard.appendChild(qText);
 
             const optionsGrid = document.createElement('div');

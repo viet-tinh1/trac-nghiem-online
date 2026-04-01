@@ -252,6 +252,15 @@ button {
     line-height: 1.6;
 }
 
+.question-number-header {
+    display: block;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.5px;
+}
+
 .options-grid {
     display: grid;
     grid-template-columns: 1fr;
