@@ -88,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let autoNextTimeout = null;
     let pendingQuestions = [];
     let pendingFileName = "";
+    let fullQuestionBank = []; // Permanent store for current file
 
     function startTimer() {
         if (timerInterval) return;
@@ -143,7 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     if (data && data.questions) {
-                        currentQuestions = data.questions; // Store for setup
+                        fullQuestionBank = data.questions; // Store for change mode
+                        pendingQuestions = data.questions; 
                         if (data.oneTime && data.id) {
                             isOneTimeMode = true;
                             currentQuizId = data.id;
@@ -154,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         const sharedName = data.id || "Quiz Chia Sẻ";
                         setTimeout(() => {
-                            showSetupModal(currentQuestions, sharedName);
+                            showSetupModal(pendingQuestions, sharedName);
                         }, 200);
                     }
                 }
@@ -186,6 +188,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Hide upload section to avoid background clutter
         uploadSection.classList.add('hidden');
         setupModal.classList.remove('hidden');
+    }
+
+    const changeModeBtn = document.getElementById('change-mode-btn');
+    if (changeModeBtn) {
+        changeModeBtn.addEventListener('click', () => {
+            if (fullQuestionBank.length > 0) {
+                showSetupModal(fullQuestionBank, currentFileName);
+            }
+        });
     }
 
     function updateSetupModeUI(mode) {
@@ -621,6 +632,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        fullQuestionBank = parsedQuestions; // Store the original full bank
         showSetupModal(parsedQuestions, currentFileName);
     }
 
