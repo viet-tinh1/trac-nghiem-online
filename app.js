@@ -403,6 +403,16 @@ document.addEventListener('DOMContentLoaded', () => {
         reviewFilter.addEventListener('change', (e) => {
             currentReviewFilter = e.target.value;
             renderQuestions(true, currentReviewFilter);
+            
+            // Auto-jump to the first relevant question if in "Incorrect Only" mode
+            if (currentReviewFilter === 'incorrect') {
+                const firstIncorrectIndex = questions.findIndex((q, idx) => userAnswers[idx] !== q.correctAnswer && userAnswers[idx] !== null);
+                if (firstIncorrectIndex !== -1) {
+                    jumpToQuestion(firstIncorrectIndex);
+                }
+            } else {
+                jumpToQuestion(0);
+            }
         });
     }
 
@@ -821,8 +831,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cardIndex = parseInt(card.getAttribute('data-index'));
                 if (cardIndex === index) {
                     card.style.display = 'block';
-                    // Scroll to top of the card/page for better focus
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } else {
                     card.style.display = 'none';
                 }
@@ -831,7 +840,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Scroll to question in list mode
             const targetCard = document.querySelector(`.question-card[data-index="${index}"]`);
             if (targetCard) {
-                targetCard.style.display = 'block'; // Ensure it's not hidden by filter
                 targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
