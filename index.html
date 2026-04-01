@@ -55,7 +55,15 @@ D. Lựa chọn 4
         <section id="quiz-section" class="quiz-container hidden">
             <div class="quiz-header">
                 <div id="review-banner" class="review-banner hidden">
-                    <span>🔍 Chế độ xem lại kết quả</span>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span>🔍 Chế độ xem lại kết quả</span>
+                        <div class="review-filter-area">
+                            <select id="review-filter" class="filter-select">
+                                <option value="all">Tất cả câu hỏi</option>
+                                <option value="incorrect">Chỉ các câu sai</option>
+                            </select>
+                        </div>
+                    </div>
                     <button id="exit-review-btn" class="btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Thoát xem lại</button>
                 </div>
                 <div class="quiz-title-area">
@@ -67,7 +75,26 @@ D. Lựa chọn 4
                     <button id="reset-btn" class="btn-secondary">Tải file khác</button>
                 </div>
             </div>
-            <div id="questions-container"></div>
+            <div class="quiz-content-wrapper">
+                <div id="questions-container"></div>
+                
+                <aside class="quiz-sidebar">
+                    <h3 class="sidebar-title">Mục lục câu hỏi</h3>
+                    <div id="question-palette" class="question-palette">
+                        <!-- Palette items injected by JS -->
+                    </div>
+                    <div class="sidebar-nav">
+                        <button id="prev-q-btn" class="btn-nav-jump">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                            Trước
+                        </button>
+                        <button id="next-q-btn" class="btn-nav-jump">
+                            Sau
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l(6-6-6-6"/></svg>
+                        </button>
+                    </div>
+                </aside>
+            </div>
         </section>
     </main>
 

@@ -41,6 +41,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const reviewBanner = document.getElementById('review-banner');
     const exitReviewBtn = document.getElementById('exit-review-btn');
     const quizTitleDisplay = document.getElementById('quiz-title-display');
+    
+    // Sidebar/Palette elements
+    const questionPalette = document.getElementById('question-palette');
+    const reviewFilter = document.getElementById('review-filter');
+    const prevQBtn = document.getElementById('prev-q-btn');
+    const nextQBtn = document.getElementById('next-q-btn');
 
     let questions = [];
     let score = 0;
@@ -52,6 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let timerInterval = null;
     let secondsElapsed = 0;
     let userAnswers = []; // Store chosen chars for current session
+    let currentQuestionIndex = 0;
+    let currentReviewFilter = 'all';
 
     function startTimer() {
         if (timerInterval) return;
@@ -182,6 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.hash = '';
         resetTimer();
         updateScore();
+        if (questionPalette) questionPalette.innerHTML = '';
     });
 
     if (retryBtn) {
@@ -195,6 +204,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeResultBtn) {
         closeResultBtn.addEventListener('click', () => {
             resultModal.classList.add('hidden');
+            // Trigger review mode immediately from result modal
+            startReview(questions, userAnswers, currentFileName);
         });
     }
 
@@ -231,10 +242,42 @@ document.addEventListener('DOMContentLoaded', () => {
     if (exitReviewBtn) {
         exitReviewBtn.addEventListener('click', () => {
             isReviewMode = false;
+            currentReviewFilter = 'all';
+            if (reviewFilter) reviewFilter.value = 'all';
             reviewBanner.classList.add('hidden');
             quizSection.classList.add('hidden');
             uploadSection.classList.remove('hidden');
         });
+    }
+
+    if (reviewFilter) {
+        reviewFilter.addEventListener('change', (e) => {
+            currentReviewFilter = e.target.value;
+            renderQuestions(true, currentReviewFilter);
+        });
+    }
+
+    if (prevQBtn) {
+        prevQBtn.addEventListener('click', () => navigateQuestion(-1));
+    }
+
+    if (nextQBtn) {
+        nextQBtn.addEventListener('click', () => navigateQuestion(1));
+    }
+
+    if (reviewFilter) {
+        reviewFilter.addEventListener('change', (e) => {
+            currentReviewFilter = e.target.value;
+            renderQuestions(true, currentReviewFilter);
+        });
+    }
+
+    if (prevQBtn) {
+        prevQBtn.addEventListener('click', () => navigateQuestion(-1));
+    }
+
+    if (nextQBtn) {
+        nextQBtn.addEventListener('click', () => navigateQuestion(1));
     }
 
     if (shareBtn) {
@@ -476,16 +519,127 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadSection.classList.add('hidden');
         quizSection.classList.remove('hidden');
         
+        renderPalette(false);
         renderQuestions();
+        updateNavButtons();
     }
 
-    function renderQuestions(isReview = false) {
+    function startReview(qs, ans, name) {
+        isReviewMode = true;
+        questions = qs;
+        userAnswers = ans;
+        currentFileName = name;
+        
+        uploadSection.classList.add('hidden');
+        quizSection.classList.remove('hidden');
+        reviewBanner.classList.remove('hidden');
+        quizTitleDisplay.textContent = name;
+        
+        renderPalette(true);
+        renderQuestions(true, currentReviewFilter);
+        updateNavButtons();
+    }
+
+    function renderPalette(isReview) {
+        if (!questionPalette) return;
+        questionPalette.innerHTML = '';
+        
+        questions.forEach((_, index) => {
+            const item = document.createElement('div');
+            item.className = 'palette-item';
+            item.textContent = index + 1;
+            item.id = `palette-item-${index}`;
+            
+            if (index === 0) item.classList.add('active');
+            
+            if (isReview) {
+                const ua = userAnswers[index];
+                const correct = questions[index].correctAnswer;
+                if (ua === correct) {
+                    item.classList.add('correct');
+                } else if (ua !== null) {
+                    item.classList.add('incorrect');
+                }
+            } else {
+                if (userAnswers[index] !== null) {
+                    item.classList.add('answered');
+                }
+            }
+            
+            item.addEventListener('click', () => jumpToQuestion(index));
+            questionPalette.appendChild(item);
+        });
+    }
+
+    function updatePaletteStatus(index, isReview) {
+        const item = document.getElementById(`palette-item-${index}`);
+        if (!item) return;
+        
+        if (isReview) {
+            const ua = userAnswers[index];
+            const correct = questions[index].correctAnswer;
+            item.classList.remove('correct', 'incorrect');
+            if (ua === correct) item.classList.add('correct');
+            else if (ua !== null) item.classList.add('incorrect');
+        } else {
+            if (userAnswers[index] !== null) item.classList.add('answered');
+        }
+    }
+
+    function jumpToQuestion(index) {
+        currentQuestionIndex = index;
+        
+        // Update palette UI
+        document.querySelectorAll('.palette-item').forEach(p => p.classList.remove('active'));
+        const activeItem = document.getElementById(`palette-item-${index}`);
+        if (activeItem) activeItem.classList.add('active');
+        
+        // Scroll to question
+        const cards = document.querySelectorAll('.question-card');
+        if (isReviewMode && currentReviewFilter === 'incorrect') {
+            // In "Incorrect only" mode, we need to find the card that corresponds to this index
+            // But actually, it's easier to just navigate through the visible cards if we filter
+            // Let's refine this to scroll to the card with data-index
+            const targetCard = document.querySelector(`.question-card[data-index="${index}"]`);
+            if (targetCard) {
+                targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        } else {
+            if (cards[index]) {
+                cards[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+        updateNavButtons();
+    }
+
+    function navigateQuestion(direction) {
+        let newIndex = currentQuestionIndex + direction;
+        if (newIndex >= 0 && newIndex < questions.length) {
+            jumpToQuestion(newIndex);
+        }
+    }
+
+    function updateNavButtons() {
+        if (prevQBtn) prevQBtn.disabled = currentQuestionIndex === 0;
+        if (nextQBtn) nextQBtn.disabled = currentQuestionIndex === questions.length - 1;
+    }
+
+    function renderQuestions(isReview = false, filter = 'all') {
         questionsContainer.innerHTML = '';
         
         questions.forEach((q, index) => {
+            const ua = userAnswers[index];
+            const isCorrect = ua === q.correctAnswer;
+            
+            // Apply filter in review mode
+            if (isReview && filter === 'incorrect' && isCorrect && ua !== null) {
+                return; // Skip correct answers
+            }
+
             const qCard = document.createElement('div');
             qCard.className = 'question-card';
-            qCard.style.animationDelay = `${index * 0.1}s`;
+            qCard.setAttribute('data-index', index);
+            qCard.style.animationDelay = `${index * 0.05}s`;
             
             const qText = document.createElement('div');
             qText.className = 'question-text';
@@ -506,10 +660,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 optEl.innerHTML = `<strong>${opt.char}.</strong> &nbsp;${opt.text}`;
                 
                 if (isReview) {
-                    const pickedChar = userAnswers[index];
                     if (opt.char === q.correctAnswer) optEl.classList.add('correct');
-                    if (opt.char === pickedChar && pickedChar !== q.correctAnswer) optEl.classList.add('incorrect');
+                    if (opt.char === ua && ua !== q.correctAnswer) optEl.classList.add('incorrect');
                 } else {
+                    if (ua === opt.char) optEl.classList.add('selected');
                     optEl.addEventListener('click', () => {
                         handleAnswerSelection(qCard, optionsGrid, optEl, opt.char, q.correctAnswer, feedback, index);
                     });
@@ -518,13 +672,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (isReview) {
-                const pickedChar = userAnswers[index];
                 feedback.style.display = 'block';
-                if (pickedChar === q.correctAnswer) {
+                if (ua === q.correctAnswer) {
                     feedback.textContent = '✅ Bạn đã trả lời đúng.';
                     feedback.className = 'feedback-msg correct-text';
-                } else if (pickedChar) {
-                    feedback.textContent = `❌ Bạn đã chọn ${pickedChar}. Đáp án đúng là ${q.correctAnswer}.`;
+                } else if (ua) {
+                    feedback.textContent = `❌ Bạn đã chọn ${ua}. Đáp án đúng là ${q.correctAnswer}.`;
                     feedback.className = 'feedback-msg incorrect-text';
                 } else {
                     feedback.textContent = `⚪ Bạn chưa trả lời câu này. Đáp án đúng là ${q.correctAnswer}.`;
@@ -574,11 +727,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         updateScore();
+        updatePaletteStatus(itemIndex, false);
         
         const cards = document.querySelectorAll('.question-card');
         if (itemIndex + 1 < cards.length && answeredQuestions < questions.length) {
             setTimeout(() => {
-                cards[itemIndex + 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                jumpToQuestion(itemIndex + 1);
             }, 600);
         }
         
@@ -649,14 +803,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const item = history[index];
         if (!item) return;
         historyModal.classList.add('hidden');
-        isReviewMode = true;
-        questions = item.questions;
-        userAnswers = item.userAnswers;
-        uploadSection.classList.add('hidden');
-        quizSection.classList.remove('hidden');
-        reviewBanner.classList.remove('hidden');
-        quizTitleDisplay.textContent = item.fileName;
-        renderQuestions(true);
+        startReview(item.questions, item.userAnswers, item.fileName);
     };
 
     function updateScore() {
