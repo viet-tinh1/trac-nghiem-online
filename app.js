@@ -177,14 +177,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (viewHistoryBtn) {
-        viewHistoryBtn.addEventListener('click', () => {
+        const handleHistoryClick = (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
             renderHistory();
             historyModal.classList.remove('hidden');
-        });
+        };
+        viewHistoryBtn.addEventListener('click', handleHistoryClick);
+        viewHistoryBtn.addEventListener('touchstart', handleHistoryClick, {passive: false});
     }
 
     if (closeHistoryBtn) {
-        closeHistoryBtn.addEventListener('click', () => {
+        closeHistoryBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             historyModal.classList.add('hidden');
         });
     }

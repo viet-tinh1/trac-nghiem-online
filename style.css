@@ -344,7 +344,7 @@ button {
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 10000000;
 }
 .modal-content {
     width: 90%;
@@ -425,12 +425,13 @@ button {
 
 .top-nav {
     position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 999;
+    top: 15px;
+    right: 15px;
+    z-index: 10000001;
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
+    pointer-events: auto !important;
 }
 
 .btn-icon {
