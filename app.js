@@ -826,16 +826,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (activeItem) activeItem.classList.add('active');
         
         if (viewMode === 'single') {
-            const cards = document.querySelectorAll('.question-card');
-            cards.forEach(card => {
-                const cardIndex = parseInt(card.getAttribute('data-index'));
-                if (cardIndex === index) {
-                    card.style.display = 'block';
-                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                } else {
-                    card.style.display = 'none';
-                }
-            });
+            // Lazy Render: Only render the current question
+            renderQuestions(isReviewMode, currentReviewFilter);
+            // After render, ensure it's in view (though it should be the only one)
+            const card = document.querySelector(`.question-card[data-index="${index}"]`);
+            if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
             // Scroll to question in list mode
             const targetCard = document.querySelector(`.question-card[data-index="${index}"]`);
@@ -879,84 +874,101 @@ document.addEventListener('DOMContentLoaded', () => {
         if (nextQBtn) nextQBtn.disabled = currentQuestionIndex === questions.length - 1;
     }
 
+    function createQuestionCard(q, index, isReview, filter) {
+        const ua = userAnswers[index];
+        const isCorrect = ua === q.correctAnswer;
+        
+        // Apply filter in review mode
+        if (isReview && filter === 'incorrect' && isCorrect && ua !== null) {
+            return null; // Skip correct answers
+        }
+
+        const qCard = document.createElement('div');
+        qCard.className = 'question-card';
+        qCard.setAttribute('data-index', index);
+        // Only add animation delay if we are rendering many (list mode)
+        if (viewMode === 'list') {
+            qCard.style.animationDelay = `${(index % 20) * 0.05}s`;
+        } else {
+            qCard.style.animation = 'fadeIn 0.3s ease-out forwards';
+        }
+        
+        // Sequential Header
+        const qHeader = document.createElement('h3');
+        qHeader.className = 'question-number-header';
+        qHeader.textContent = `Câu ${index + 1}`;
+        qCard.appendChild(qHeader);
+
+        const qText = document.createElement('div');
+        qText.className = 'question-text';
+        qText.textContent = q.text; 
+        qCard.appendChild(qText);
+
+        const optionsGrid = document.createElement('div');
+        optionsGrid.className = 'options-grid';
+
+        const feedback = document.createElement('div');
+        feedback.className = 'feedback-msg';
+
+        q.options.forEach(opt => {
+            const optEl = document.createElement('div');
+            optEl.className = 'option';
+            if (isReview) optEl.classList.add('disabled');
+            
+            optEl.innerHTML = `<strong>${opt.char}.</strong> &nbsp;${opt.text}`;
+            
+            if (isReview) {
+                if (opt.char === q.correctAnswer) optEl.classList.add('correct');
+                if (opt.char === ua && ua !== q.correctAnswer) optEl.classList.add('incorrect');
+            } else {
+                if (ua === opt.char) optEl.classList.add('selected');
+                optEl.addEventListener('click', () => {
+                    handleAnswerSelection(qCard, optionsGrid, optEl, opt.char, q.correctAnswer, feedback, index);
+                });
+            }
+            optionsGrid.appendChild(optEl);
+        });
+
+        if (isReview) {
+            feedback.style.display = 'block';
+            if (ua === q.correctAnswer) {
+                feedback.textContent = '✅ Bạn đã trả lời đúng.';
+                feedback.className = 'feedback-msg correct-text';
+            } else if (ua) {
+                feedback.textContent = `❌ Bạn đã chọn ${ua}. Đáp án đúng là ${q.correctAnswer}.`;
+                feedback.className = 'feedback-msg incorrect-text';
+            } else {
+                feedback.textContent = `⚪ Bạn chưa trả lời câu này. Đáp án đúng là ${q.correctAnswer}.`;
+                feedback.className = 'feedback-msg';
+            }
+        }
+
+        qCard.appendChild(optionsGrid);
+        qCard.appendChild(feedback);
+        return qCard;
+    }
+
     function renderQuestions(isReview = false, filter = 'all') {
         questionsContainer.innerHTML = '';
         
-        questions.forEach((q, index) => {
-            const ua = userAnswers[index];
-            const isCorrect = ua === q.correctAnswer;
-            
-            // Apply filter in review mode
-            if (isReview && filter === 'incorrect' && isCorrect && ua !== null) {
-                return; // Skip correct answers
-            }
-
-            const qCard = document.createElement('div');
-            qCard.className = 'question-card';
-            qCard.setAttribute('data-index', index);
-            qCard.style.animationDelay = `${index * 0.05}s`;
-            
-            // Handle Single View Mode Visibility
-            if (viewMode === 'single' && index !== currentQuestionIndex) {
-                qCard.style.display = 'none';
-            } else if (viewMode === 'single' && index === currentQuestionIndex) {
-                qCard.style.display = 'block';
-            }
-            
-            // Sequential Header
-            const qHeader = document.createElement('h3');
-            qHeader.className = 'question-number-header';
-            qHeader.textContent = `Câu ${index + 1}`;
-            qCard.appendChild(qHeader);
-
-            const qText = document.createElement('div');
-            qText.className = 'question-text';
-            qText.textContent = q.text; // Original text (e.g. "Câu 137: ...")
-            qCard.appendChild(qText);
-
-            const optionsGrid = document.createElement('div');
-            optionsGrid.className = 'options-grid';
-
-            const feedback = document.createElement('div');
-            feedback.className = 'feedback-msg';
-
-            q.options.forEach(opt => {
-                const optEl = document.createElement('div');
-                optEl.className = 'option';
-                if (isReview) optEl.classList.add('disabled');
-                
-                optEl.innerHTML = `<strong>${opt.char}.</strong> &nbsp;${opt.text}`;
-                
-                if (isReview) {
-                    if (opt.char === q.correctAnswer) optEl.classList.add('correct');
-                    if (opt.char === ua && ua !== q.correctAnswer) optEl.classList.add('incorrect');
-                } else {
-                    if (ua === opt.char) optEl.classList.add('selected');
-                    optEl.addEventListener('click', () => {
-                        handleAnswerSelection(qCard, optionsGrid, optEl, opt.char, q.correctAnswer, feedback, index);
-                    });
+        if (viewMode === 'single') {
+            const q = questions[currentQuestionIndex];
+            if (q) {
+                const card = createQuestionCard(q, currentQuestionIndex, isReview, filter);
+                // If the current question was filtered out, move to the next valid one
+                if (!card && isReview) {
+                    navigateQuestion(1);
+                    return;
                 }
-                optionsGrid.appendChild(optEl);
+                if (card) questionsContainer.appendChild(card);
+            }
+        } else {
+            // List mode: Render all visible
+            questions.forEach((q, index) => {
+                const card = createQuestionCard(q, index, isReview, filter);
+                if (card) questionsContainer.appendChild(card);
             });
-
-            if (isReview) {
-                feedback.style.display = 'block';
-                if (ua === q.correctAnswer) {
-                    feedback.textContent = '✅ Bạn đã trả lời đúng.';
-                    feedback.className = 'feedback-msg correct-text';
-                } else if (ua) {
-                    feedback.textContent = `❌ Bạn đã chọn ${ua}. Đáp án đúng là ${q.correctAnswer}.`;
-                    feedback.className = 'feedback-msg incorrect-text';
-                } else {
-                    feedback.textContent = `⚪ Bạn chưa trả lời câu này. Đáp án đúng là ${q.correctAnswer}.`;
-                    feedback.className = 'feedback-msg';
-                }
-            }
-
-            qCard.appendChild(optionsGrid);
-            qCard.appendChild(feedback);
-            questionsContainer.appendChild(qCard);
-        });
+        }
     }
 
     function handleAnswerSelection(card, grid, selectedEl, selectedChar, correctChar, feedbackEl, itemIndex) {
@@ -1002,10 +1014,9 @@ document.addEventListener('DOMContentLoaded', () => {
             resetAutoNextTimer();
         } else {
             // Standard small delay for UX
-            const cards = document.querySelectorAll('.question-card');
-            if (itemIndex + 1 < cards.length && answeredQuestions < questions.length) {
+            if (itemIndex + 1 < questions.length && answeredQuestions < questions.length) {
                 setTimeout(() => {
-                    jumpToQuestion(itemIndex + 1);
+                    navigateQuestion(1); // Use navigateQuestion instead of jumpToQuestion for consistency
                 }, 600);
             }
         }
